@@ -805,7 +805,7 @@
   enemyBtn.addEventListener('mouseleave', () => { hovering = false; updateDebug(); });
 
   // --- Init ---
-  enemyBtn.addEventListener('click', onClickEnemy);
+  enemyBtn.addEventListener('click', () => onClickEnemy(false));
   restartBtn.addEventListener('click', restart);
   state = initState();
   render();

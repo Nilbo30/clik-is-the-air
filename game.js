@@ -126,6 +126,10 @@ const Game = {
     UI.dom.restartBtn.addEventListener('click', Game.restart);
     UI.dom.prestigeBtn.addEventListener('click', Prestige.showScreen);
     UI.dom.prestigeBack.addEventListener('click', Prestige.hideScreen);
+    UI.dom.prestigeStart.addEventListener('click', () => {
+      Prestige.hideScreen();
+      Game.restart();
+    });
     UI.dom.goPrestigeBtn.addEventListener('click', () => {
       UI.dom.goOvl.classList.remove('open');
       Prestige.showScreen();

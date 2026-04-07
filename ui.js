@@ -35,6 +35,7 @@ const UI = {
       prestigeBtn:  $('prestige-btn'),
       prestigeOvl:  $('prestige-overlay'),
       prestigeBack: $('prestige-back'),
+      prestigeStart:$('prestige-start'),
       prestigeNodes:$('prestige-nodes'),
       ptDp:         $('pt-dp'),
     };

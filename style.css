@@ -562,3 +562,21 @@ body {
   border-color: #a78bfa;
   color: #e0e0e0;
 }
+
+.pt-start-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  margin-top: 8px;
+  font-size: 15px;
+  font-weight: 700;
+  border: 2px solid #f97316;
+  border-radius: 10px;
+  background: transparent;
+  color: #f97316;
+  cursor: pointer;
+  transition: background .15s, border-color .15s;
+}
+.pt-start-btn:hover {
+  background: rgba(249,115,22,.15);
+}

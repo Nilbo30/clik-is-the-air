@@ -700,9 +700,10 @@
   const CD_CIRCUMFERENCE = 2 * Math.PI * 90; // matches SVG r=90
   function updateCooldownRing() {
     const s = state;
-    const now = performance.now();
-    const elapsed = (now - s.lastClickTime) / 1000;
-    const progress = Math.min(elapsed / s.cooldown, 1);
+    const now = Date.now();
+    const elapsed = now - s.lastClickTime;
+    const cdMs = s.cooldown * 1000;
+    const progress = Math.min(elapsed / cdMs, 1);
     cdRing.style.strokeDashoffset = CD_CIRCUMFERENCE * (1 - progress);
     if (progress >= 1) {
       enemyBtn.classList.remove('on-cooldown');
@@ -721,9 +722,8 @@
 
     // Cooldown check
     if (!ignoreCooldown) {
-      const now = performance.now();
-      if ((now - s.lastClickTime) / 1000 < s.cooldown) return;
-      s.lastClickTime = now;
+      if (Date.now() - s.lastClickTime < s.cooldown * 1000) return;
+      s.lastClickTime = Date.now();
     }
 
     // Spend energy

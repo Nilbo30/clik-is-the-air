@@ -732,6 +732,7 @@
     if (!ignoreCooldown) {
       if (Date.now() - s.lastClickTime < s.cooldown * 1000) return;
       s.lastClickTime = Date.now();
+      console.log('lastClickTime updated', s.lastClickTime, 'state.lastClickTime', state.lastClickTime);
     }
 
     // Spend energy

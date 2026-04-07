@@ -237,6 +237,23 @@
     transition: background .15s;
   }
   #restart-btn:hover { background: rgba(167,139,250,.15); }
+
+  /* Debug indicator */
+  #debug-badge {
+    display: none;
+    position: fixed;
+    top: 72px;
+    right: 18px;
+    background: #dc2626;
+    color: #fff;
+    font-size: 11px;
+    font-weight: 700;
+    letter-spacing: 2px;
+    padding: 4px 12px;
+    border-radius: 6px;
+    z-index: 300;
+  }
+  #debug-badge.on { display: block; }
 </style>
 </head>
 <body>
@@ -282,6 +299,8 @@
   </div>
 </div>
 
+<div id="debug-badge">DEBUG</div>
+
 <!-- Game over -->
 <div id="gameover-overlay">
   <h1>GAME OVER</h1>
@@ -294,7 +313,6 @@
   const SKILLS = [
     { id: 'heavy',    name: 'Heavy Strike', desc: '+2 damage per click',                apply: s => { s.dmg += 2; } },
     { id: 'efficient',name: 'Efficient',    desc: 'Clicks cost 1 less energy (min 1)',  apply: s => { s.cost = Math.max(1, s.cost - 1); } },
-    { id: 'vampirism',name: 'Vampirism',    desc: 'Each click restores 1 energy',       apply: s => { s.vamp += 1; } },
     { id: 'berserker',name: 'Berserker',    desc: '+5 damage but +2 energy cost',       apply: s => { s.dmg += 5; s.cost += 2; } },
     { id: 'focus',    name: 'Focus',        desc: '+20 max energy',                     apply: s => { s.maxEnergy += 20; s.energy = Math.min(s.energy + 20, s.maxEnergy); } },
   ];
@@ -306,7 +324,6 @@
     return {
       dmg: 1,
       cost: 1,
-      vamp: 0,
       energy: 50,
       maxEnergy: 50,
       xp: 0,
@@ -420,10 +437,7 @@
     spawnDmgNumber(s.dmg);
     shakeEnemy();
 
-    // Vampirism
-    s.energy = Math.min(s.maxEnergy, s.energy + s.vamp);
-
-    // Check energy after vamp
+    // Check energy
     if (s.energy <= 0) {
       s.energy = 0;
       render();
@@ -457,6 +471,32 @@
     state = initState();
     render();
   }
+
+  // --- Debug mode (Shift + hover) ---
+  let debugInterval = null;
+  const debugBadge = $('debug-badge');
+
+  function startDebug() {
+    if (debugInterval) return;
+    debugBadge.classList.add('on');
+    debugInterval = setInterval(onClickEnemy, 50);
+  }
+
+  function stopDebug() {
+    if (!debugInterval) return;
+    clearInterval(debugInterval);
+    debugInterval = null;
+    debugBadge.classList.remove('on');
+  }
+
+  enemyBtn.addEventListener('mouseenter', e => { if (e.shiftKey) startDebug(); });
+  enemyBtn.addEventListener('mouseleave', () => stopDebug());
+  document.addEventListener('keydown', e => {
+    if (e.key === 'Shift' && enemyBtn.matches(':hover')) startDebug();
+  });
+  document.addEventListener('keyup', e => {
+    if (e.key === 'Shift') stopDebug();
+  });
 
   // --- Init ---
   enemyBtn.addEventListener('click', onClickEnemy);

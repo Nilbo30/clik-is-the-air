@@ -716,6 +716,14 @@
 
   // --- Click handler ---
   function onClickEnemy(ignoreCooldown = false) {
+    console.log({
+      ignoreCooldown,
+      goOvlOpen: goOvl.classList.contains('open'),
+      modalOvlOpen: modalOvl.classList.contains('open'),
+      timeSinceLastClick: Date.now() - state.lastClickTime,
+      cooldownMs: state.cooldown * 1000,
+      wouldBlock: Date.now() - state.lastClickTime < state.cooldown * 1000
+    });
     const s = state;
     if (goOvl.classList.contains('open')) return;
     if (!ignoreCooldown && modalOvl.classList.contains('open')) return;

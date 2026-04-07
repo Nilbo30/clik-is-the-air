@@ -474,29 +474,30 @@
 
   // --- Debug mode (Shift + hover) ---
   let debugInterval = null;
+  let shiftHeld = false;
+  let hovering = false;
   const debugBadge = $('debug-badge');
 
-  function startDebug() {
-    if (debugInterval) return;
-    debugBadge.classList.add('on');
-    debugInterval = setInterval(onClickEnemy, 50);
+  function updateDebug() {
+    const shouldRun = shiftHeld && hovering;
+    if (shouldRun && !debugInterval) {
+      debugBadge.classList.add('on');
+      debugInterval = setInterval(onClickEnemy, 100);
+    } else if (!shouldRun && debugInterval) {
+      clearInterval(debugInterval);
+      debugInterval = null;
+      debugBadge.classList.remove('on');
+    }
   }
 
-  function stopDebug() {
-    if (!debugInterval) return;
-    clearInterval(debugInterval);
-    debugInterval = null;
-    debugBadge.classList.remove('on');
-  }
-
-  enemyBtn.addEventListener('mouseenter', e => { if (e.shiftKey) startDebug(); });
-  enemyBtn.addEventListener('mouseleave', () => stopDebug());
   document.addEventListener('keydown', e => {
-    if (e.key === 'Shift' && enemyBtn.matches(':hover')) startDebug();
+    if (e.key === 'Shift' && !shiftHeld) { shiftHeld = true; updateDebug(); }
   });
   document.addEventListener('keyup', e => {
-    if (e.key === 'Shift') stopDebug();
+    if (e.key === 'Shift') { shiftHeld = false; updateDebug(); }
   });
+  enemyBtn.addEventListener('mouseenter', () => { hovering = true; updateDebug(); });
+  enemyBtn.addEventListener('mouseleave', () => { hovering = false; updateDebug(); });
 
   // --- Init ---
   enemyBtn.addEventListener('click', onClickEnemy);

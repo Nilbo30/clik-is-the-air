@@ -15,6 +15,11 @@
   <div class="hud-item"><div class="hud-label">Damage</div><div class="hud-value dmg" id="h-dmg">1</div></div>
   <div class="hud-item"><div class="hud-label">Cost</div><div class="hud-value cost" id="h-cost">1</div></div>
   <div class="hud-item"><div class="hud-label">Cooldown</div><div class="hud-value cd" id="h-cd">1.0s</div></div>
+  <div class="hud-item hud-dp-item">
+    <div class="hud-label">Death Points</div>
+    <div class="hud-value dp" id="h-dp">0</div>
+    <button id="prestige-btn" class="prestige-hud-btn">Upgrades</button>
+  </div>
 </div>
 
 <!-- Main arena -->
@@ -28,7 +33,7 @@
   <!-- Enemy HP bar -->
   <div class="bar-wrap">
     <div class="bar-label">Enemy HP</div>
-    <div class="bar"><div class="bar-fill hp" id="hp-fill" style="width:100%"></div><div class="bar-text" id="hp-text">100 / 100</div></div>
+    <div class="bar"><div class="bar-fill hp" id="hp-fill" style="width:100%"></div><div class="bar-text" id="hp-text">250 / 250</div></div>
   </div>
 
   <!-- Enemy button -->
@@ -60,12 +65,38 @@
 <div id="gameover-overlay">
   <h1>GAME OVER</h1>
   <div class="go-stats" id="go-stats">You ran out of energy!</div>
-  <button id="restart-btn">Play Again</button>
+  <div class="go-dp-summary">
+    <div class="go-dp-row">Enemies killed: <span id="go-kills">0</span></div>
+    <div class="go-dp-row">DP earned: <span id="go-dp-earned" class="dp-highlight">+0</span></div>
+    <div class="go-dp-row">Total DP: <span id="go-dp-total">0</span></div>
+  </div>
+  <div class="go-buttons">
+    <button id="restart-btn">Play Again</button>
+    <button id="go-prestige-btn" class="prestige-go-btn">Upgrades</button>
+  </div>
 </div>
 
-<!-- Scripts: order matters (ui → skills → game → debug) -->
+<!-- Prestige screen -->
+<div id="prestige-overlay">
+  <div id="prestige-screen">
+    <div class="pt-header">
+      <h2>Prestige Upgrades</h2>
+      <div class="pt-dp-display">Death Points: <span id="pt-dp">0</span></div>
+    </div>
+    <div class="pt-branches">
+      <div class="pt-branch">
+        <h3 class="pt-branch-title">Stats</h3>
+        <div id="prestige-nodes" class="pt-nodes"></div>
+      </div>
+    </div>
+    <button id="prestige-back" class="pt-back-btn">Back to Game</button>
+  </div>
+</div>
+
+<!-- Scripts: order matters (ui → skills → prestige → game → debug) -->
 <script src="ui.js"></script>
 <script src="skills.js"></script>
+<script src="prestige.js"></script>
 <script src="game.js"></script>
 <script src="debug.js"></script>
 <script>

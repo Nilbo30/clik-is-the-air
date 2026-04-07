@@ -363,3 +363,202 @@ body {
 #guarantee-badge.g-epic      { color: #c084fc; border-color: #3b1f6e; }
 #guarantee-badge.g-legendary { color: #fbbf24; border-color: #78350f; }
 #guarantee-badge.g-all-legendary { color: #fbbf24; border-color: #78350f; text-shadow: 0 0 8px rgba(251,191,36,.4); }
+
+/* --- HUD DP & Prestige button --- */
+.hud-value.dp { color: #f97316; }
+.hud-dp-item { display: flex; flex-direction: column; align-items: center; }
+.prestige-hud-btn {
+  margin-top: 4px;
+  padding: 3px 10px;
+  font-size: 10px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 1px;
+  border: 1px solid #f97316;
+  border-radius: 5px;
+  background: transparent;
+  color: #f97316;
+  cursor: pointer;
+  transition: background .15s;
+}
+.prestige-hud-btn:hover { background: rgba(249,115,22,.15); }
+
+/* --- Game Over DP summary --- */
+.go-dp-summary {
+  margin-bottom: 20px;
+  text-align: center;
+}
+.go-dp-row {
+  font-size: 15px;
+  color: #aaa;
+  margin-bottom: 6px;
+}
+.go-dp-row span { font-weight: 700; color: #e0e0e0; }
+.dp-highlight { color: #f97316 !important; }
+.go-buttons {
+  display: flex;
+  gap: 12px;
+  align-items: center;
+}
+.prestige-go-btn {
+  padding: 14px 32px;
+  font-size: 18px;
+  font-weight: 700;
+  border: 2px solid #f97316;
+  border-radius: 10px;
+  background: transparent;
+  color: #f97316;
+  cursor: pointer;
+  transition: background .15s;
+}
+.prestige-go-btn:hover { background: rgba(249,115,22,.15); }
+
+/* --- Prestige Overlay --- */
+#prestige-overlay {
+  display: none;
+  position: fixed;
+  inset: 0;
+  background: rgba(0,0,0,.85);
+  backdrop-filter: blur(6px);
+  z-index: 250;
+  align-items: center;
+  justify-content: center;
+}
+#prestige-overlay.open { display: flex; }
+
+#prestige-screen {
+  background: #12121f;
+  border: 1px solid #2a2a4a;
+  border-radius: 16px;
+  padding: 32px;
+  max-width: 600px;
+  width: 92vw;
+  max-height: 85vh;
+  overflow-y: auto;
+}
+
+.pt-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 24px;
+}
+.pt-header h2 {
+  font-size: 22px;
+  color: #f97316;
+}
+.pt-dp-display {
+  font-size: 14px;
+  color: #888;
+}
+.pt-dp-display span {
+  font-weight: 700;
+  color: #f97316;
+  font-size: 18px;
+}
+
+.pt-branches { margin-bottom: 24px; }
+.pt-branch-title {
+  font-size: 14px;
+  text-transform: uppercase;
+  letter-spacing: 2px;
+  color: #888;
+  margin-bottom: 12px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid #1e1e3a;
+}
+
+.pt-nodes {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 10px;
+}
+
+.pt-node {
+  padding: 12px 14px;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  background: #1a1a2e;
+  text-align: center;
+  transition: border-color .15s, background .15s, opacity .15s;
+  position: relative;
+}
+.pt-node-name {
+  font-size: 13px;
+  font-weight: 700;
+  color: #e0e0e0;
+  margin-bottom: 4px;
+}
+.pt-node-desc {
+  font-size: 11px;
+  color: #888;
+  margin-bottom: 6px;
+}
+.pt-node-cost {
+  font-size: 12px;
+  font-weight: 700;
+  color: #f97316;
+}
+
+/* Node states */
+.pt-node.owned {
+  border-color: #f97316;
+  background: rgba(249,115,22,.08);
+}
+.pt-node.owned .pt-node-cost { color: #34d399; }
+.pt-node.owned .pt-node-name { color: #f97316; }
+
+.pt-node.available {
+  border-color: #4a4a6a;
+  cursor: pointer;
+}
+.pt-node.available:hover {
+  border-color: #f97316;
+  background: rgba(249,115,22,.05);
+}
+
+.pt-node.locked {
+  opacity: .4;
+  cursor: default;
+}
+
+/* Coming soon placeholder */
+.pt-branch-placeholder {
+  padding: 12px 14px;
+  border: 1px dashed #2a2a4a;
+  border-radius: 10px;
+  background: transparent;
+  text-align: center;
+  opacity: .3;
+}
+.pt-branch-placeholder .pt-node-name { color: #666; font-size: 13px; font-weight: 700; margin-bottom: 4px; }
+.pt-branch-placeholder .pt-node-desc { color: #555; font-size: 11px; }
+
+/* Connector line for chained nodes */
+.pt-connector {
+  position: absolute;
+  top: -10px;
+  left: 50%;
+  transform: translateX(-50%);
+  width: 2px;
+  height: 10px;
+  background: #f97316;
+}
+
+.pt-back-btn {
+  display: block;
+  width: 100%;
+  padding: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  border: 1px solid #2a2a4a;
+  border-radius: 10px;
+  background: #12121f;
+  color: #888;
+  cursor: pointer;
+  transition: border-color .15s, color .15s;
+}
+.pt-back-btn:hover {
+  border-color: #a78bfa;
+  color: #e0e0e0;
+}

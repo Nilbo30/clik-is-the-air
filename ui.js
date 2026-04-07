@@ -6,27 +6,37 @@ const UI = {
   initDom() {
     const $ = id => document.getElementById(id);
     UI.dom = {
-      enemyBtn:   $('enemy-btn'),
-      hpFill:     $('hp-fill'),
-      hpText:     $('hp-text'),
-      enFill:     $('en-fill'),
-      enText:     $('en-text'),
-      xpFill:     $('xp-fill'),
-      xpText:     $('xp-text'),
-      hLevel:     $('h-level'),
-      hWave:      $('h-wave'),
-      hDmg:       $('h-dmg'),
-      hCost:      $('h-cost'),
-      hCd:        $('h-cd'),
-      modalOvl:   $('modal-overlay'),
-      modalLevel: $('modal-level'),
-      skillDiv:   $('skill-choices'),
-      goOvl:      $('gameover-overlay'),
-      goStats:    $('go-stats'),
-      restartBtn: $('restart-btn'),
-      guarBadge:  $('guarantee-badge'),
-      debugBadge: $('debug-badge'),
-      cdRing:     document.querySelector('#cooldown-ring circle'),
+      enemyBtn:     $('enemy-btn'),
+      hpFill:       $('hp-fill'),
+      hpText:       $('hp-text'),
+      enFill:       $('en-fill'),
+      enText:       $('en-text'),
+      xpFill:       $('xp-fill'),
+      xpText:       $('xp-text'),
+      hLevel:       $('h-level'),
+      hWave:        $('h-wave'),
+      hDmg:         $('h-dmg'),
+      hCost:        $('h-cost'),
+      hCd:          $('h-cd'),
+      hDp:          $('h-dp'),
+      modalOvl:     $('modal-overlay'),
+      modalLevel:   $('modal-level'),
+      skillDiv:     $('skill-choices'),
+      goOvl:        $('gameover-overlay'),
+      goStats:      $('go-stats'),
+      goKills:      $('go-kills'),
+      goDpEarned:   $('go-dp-earned'),
+      goDpTotal:    $('go-dp-total'),
+      restartBtn:   $('restart-btn'),
+      goPrestigeBtn:$('go-prestige-btn'),
+      guarBadge:    $('guarantee-badge'),
+      debugBadge:   $('debug-badge'),
+      cdRing:       document.querySelector('#cooldown-ring circle'),
+      prestigeBtn:  $('prestige-btn'),
+      prestigeOvl:  $('prestige-overlay'),
+      prestigeBack: $('prestige-back'),
+      prestigeNodes:$('prestige-nodes'),
+      ptDp:         $('pt-dp'),
     };
   },
 
@@ -44,6 +54,7 @@ const UI = {
     d.hDmg.textContent   = s.dmg;
     d.hCost.textContent  = s.cost;
     d.hCd.textContent    = s.cooldown.toFixed(1) + 's';
+    d.hDp.textContent    = Prestige.dp;
 
     // Guarantee badge
     d.guarBadge.className = '';
@@ -58,6 +69,11 @@ const UI = {
       d.guarBadge.textContent = labels[s.guarantee];
       d.guarBadge.className = 'on ' + cls;
     }
+  },
+
+  renderPrestigeDp() {
+    UI.dom.ptDp.textContent = Prestige.dp;
+    UI.dom.hDp.textContent = Prestige.dp;
   },
 
   spawnDmgNumber(amount) {

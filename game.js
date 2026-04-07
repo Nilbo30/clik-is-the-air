@@ -4,22 +4,27 @@ const Game = {
   state: null,
 
   initState() {
-    return {
+    const s = {
       dmg: 1,
       cost: 1,
       energy: 50,
       maxEnergy: 50,
       xp: 0,
+      xpMult: 1,
       level: 1,
       xpToLevel: 100,
       wave: 1,
-      enemyHp: 100,
-      enemyMaxHp: 100,
+      enemyHp: 250,
+      enemyMaxHp: 250,
       luckyBonus: 0,
       guarantee: null,
       cooldown: 1.0,
       lastClickTime: 0,
+      kills: 0,
     };
+    // Apply prestige upgrades
+    Prestige.applyUpgrades(s);
+    return s;
   },
 
   onClickEnemy(ignoreCooldown = false) {
@@ -58,8 +63,8 @@ const Game = {
       return;
     }
 
-    // XP
-    s.xp += 10;
+    // XP (with multiplier)
+    s.xp += Math.floor(10 * s.xpMult);
     if (s.xp >= s.xpToLevel) {
       s.xp -= s.xpToLevel;
       s.level++;
@@ -69,6 +74,7 @@ const Game = {
 
     // Enemy dead → next wave
     if (s.enemyHp <= 0) {
+      s.kills++;
       s.wave++;
       s.enemyMaxHp = Math.ceil(s.enemyMaxHp * 1.5);
       s.enemyHp = s.enemyMaxHp;
@@ -78,7 +84,15 @@ const Game = {
   },
 
   gameOver() {
-    UI.dom.goStats.textContent = 'Reached wave ' + Game.state.wave + ' · Level ' + Game.state.level;
+    const s = Game.state;
+    const dpEarned = Prestige.calcDP(s.kills);
+    Prestige.dp += dpEarned;
+    Prestige.save();
+
+    UI.dom.goKills.textContent = s.kills;
+    UI.dom.goDpEarned.textContent = dpEarned;
+    UI.dom.goDpTotal.textContent = Prestige.dp;
+    UI.dom.goStats.textContent = 'Reached wave ' + s.wave + ' · Level ' + s.level;
     UI.dom.goOvl.classList.add('open');
   },
 
@@ -87,12 +101,29 @@ const Game = {
     UI.dom.modalOvl.classList.remove('open');
     Game.state = Game.initState();
     UI.render();
+
+    // If L1 purchased, show a level-up skill choice before the run
+    if (Prestige.purchased['L1']) {
+      Skills.showLevelUp();
+    }
   },
 
   init() {
+    Prestige.load();
     Game.state = Game.initState();
     UI.dom.enemyBtn.addEventListener('click', () => Game.onClickEnemy(false));
     UI.dom.restartBtn.addEventListener('click', Game.restart);
+    UI.dom.prestigeBtn.addEventListener('click', Prestige.showScreen);
+    UI.dom.prestigeBack.addEventListener('click', Prestige.hideScreen);
+    UI.dom.goPrestigeBtn.addEventListener('click', () => {
+      UI.dom.goOvl.classList.remove('open');
+      Prestige.showScreen();
+    });
     UI.render();
+
+    // If L1 purchased, show skill choice on first load too
+    if (Prestige.purchased['L1']) {
+      Skills.showLevelUp();
+    }
   },
 };

@@ -1,0 +1,468 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Clik is the Air</title>
+<style>
+  *, *::before, *::after { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    background: #0f0f1a;
+    color: #e0e0e0;
+    font-family: 'Segoe UI', system-ui, sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    overflow: hidden;
+    user-select: none;
+  }
+
+  /* --- Top HUD --- */
+  #hud {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    display: flex;
+    justify-content: center;
+    gap: 32px;
+    padding: 18px 24px;
+    background: rgba(15, 15, 26, .85);
+    backdrop-filter: blur(8px);
+    border-bottom: 1px solid #1e1e3a;
+    z-index: 10;
+  }
+  .hud-item { text-align: center; min-width: 100px; }
+  .hud-label { font-size: 11px; text-transform: uppercase; letter-spacing: 1.5px; color: #888; margin-bottom: 4px; }
+  .hud-value { font-size: 22px; font-weight: 700; }
+  .hud-value.level { color: #a78bfa; }
+  .hud-value.wave  { color: #f59e0b; }
+  .hud-value.dmg   { color: #ef4444; }
+  .hud-value.cost  { color: #38bdf8; }
+
+  /* --- Bars --- */
+  .bar-wrap {
+    width: 340px;
+    max-width: 90vw;
+    margin-bottom: 14px;
+    text-align: center;
+  }
+  .bar-label {
+    font-size: 12px;
+    letter-spacing: 1px;
+    text-transform: uppercase;
+    margin-bottom: 4px;
+    color: #aaa;
+  }
+  .bar {
+    height: 22px;
+    border-radius: 11px;
+    background: #1a1a2e;
+    overflow: hidden;
+    position: relative;
+    border: 1px solid #2a2a4a;
+  }
+  .bar-fill {
+    height: 100%;
+    border-radius: 11px;
+    transition: width .15s ease;
+  }
+  .bar-text {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 12px;
+    font-weight: 600;
+    color: #fff;
+    text-shadow: 0 1px 3px rgba(0,0,0,.6);
+  }
+  .bar-fill.hp     { background: linear-gradient(90deg, #dc2626, #ef4444); }
+  .bar-fill.energy { background: linear-gradient(90deg, #2563eb, #38bdf8); }
+  .bar-fill.xp     { background: linear-gradient(90deg, #7c3aed, #a78bfa); }
+
+  /* --- Enemy area --- */
+  #arena {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    gap: 16px;
+  }
+
+  #enemy-btn {
+    width: 180px;
+    height: 180px;
+    border-radius: 50%;
+    border: 3px solid #ef4444;
+    background: radial-gradient(circle at 35% 35%, #2a1a1a, #1a0a0a);
+    color: #ef4444;
+    font-size: 28px;
+    font-weight: 800;
+    cursor: pointer;
+    transition: box-shadow .1s, transform .1s;
+    box-shadow: 0 0 30px rgba(239,68,68,.25), inset 0 0 20px rgba(239,68,68,.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  #enemy-btn:hover {
+    box-shadow: 0 0 50px rgba(239,68,68,.4), inset 0 0 30px rgba(239,68,68,.15);
+  }
+  #enemy-btn:active {
+    transform: scale(.95);
+  }
+  #enemy-btn.shake {
+    animation: shake .15s ease;
+  }
+  @keyframes shake {
+    0%, 100% { transform: translate(0); }
+    25%  { transform: translate(-6px, 3px); }
+    50%  { transform: translate(5px, -4px); }
+    75%  { transform: translate(-3px, 5px); }
+  }
+
+  /* floating damage numbers */
+  .dmg-float {
+    position: absolute;
+    font-size: 22px;
+    font-weight: 800;
+    color: #fbbf24;
+    pointer-events: none;
+    animation: floatUp .7s ease-out forwards;
+    text-shadow: 0 0 6px rgba(251,191,36,.6);
+  }
+  @keyframes floatUp {
+    0%   { opacity: 1; transform: translateY(0) scale(1); }
+    100% { opacity: 0; transform: translateY(-80px) scale(1.4); }
+  }
+
+  /* --- Modal --- */
+  #modal-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.75);
+    backdrop-filter: blur(4px);
+    z-index: 100;
+    align-items: center;
+    justify-content: center;
+  }
+  #modal-overlay.open { display: flex; }
+
+  #modal {
+    background: #1a1a2e;
+    border: 1px solid #2a2a4a;
+    border-radius: 16px;
+    padding: 32px;
+    max-width: 460px;
+    width: 90vw;
+    text-align: center;
+  }
+  #modal h2 {
+    font-size: 24px;
+    margin-bottom: 6px;
+    color: #a78bfa;
+  }
+  #modal p {
+    font-size: 14px;
+    color: #888;
+    margin-bottom: 24px;
+  }
+  .skill-btn {
+    display: block;
+    width: 100%;
+    padding: 14px 18px;
+    margin-bottom: 10px;
+    border: 1px solid #2a2a4a;
+    border-radius: 10px;
+    background: #12121f;
+    color: #e0e0e0;
+    font-size: 15px;
+    cursor: pointer;
+    text-align: left;
+    transition: background .15s, border-color .15s;
+  }
+  .skill-btn:hover {
+    background: #1e1e3a;
+    border-color: #a78bfa;
+  }
+  .skill-btn .skill-name {
+    font-weight: 700;
+    color: #a78bfa;
+  }
+  .skill-btn .skill-desc {
+    display: block;
+    font-size: 12px;
+    color: #888;
+    margin-top: 2px;
+  }
+
+  /* --- Game Over overlay --- */
+  #gameover-overlay {
+    display: none;
+    position: fixed;
+    inset: 0;
+    background: rgba(0,0,0,.8);
+    backdrop-filter: blur(6px);
+    z-index: 200;
+    align-items: center;
+    justify-content: center;
+    flex-direction: column;
+  }
+  #gameover-overlay.open { display: flex; }
+  #gameover-overlay h1 {
+    font-size: 48px;
+    color: #ef4444;
+    margin-bottom: 12px;
+  }
+  #gameover-overlay .go-stats {
+    color: #888;
+    font-size: 16px;
+    margin-bottom: 24px;
+  }
+  #restart-btn {
+    padding: 14px 40px;
+    font-size: 18px;
+    font-weight: 700;
+    border: 2px solid #a78bfa;
+    border-radius: 10px;
+    background: transparent;
+    color: #a78bfa;
+    cursor: pointer;
+    transition: background .15s;
+  }
+  #restart-btn:hover { background: rgba(167,139,250,.15); }
+</style>
+</head>
+<body>
+
+<!-- HUD -->
+<div id="hud">
+  <div class="hud-item"><div class="hud-label">Level</div><div class="hud-value level" id="h-level">1</div></div>
+  <div class="hud-item"><div class="hud-label">Wave</div><div class="hud-value wave" id="h-wave">1</div></div>
+  <div class="hud-item"><div class="hud-label">Damage</div><div class="hud-value dmg" id="h-dmg">1</div></div>
+  <div class="hud-item"><div class="hud-label">Cost</div><div class="hud-value cost" id="h-cost">1</div></div>
+</div>
+
+<!-- Main arena -->
+<div id="arena">
+  <!-- XP bar -->
+  <div class="bar-wrap">
+    <div class="bar-label">XP</div>
+    <div class="bar"><div class="bar-fill xp" id="xp-fill" style="width:0%"></div><div class="bar-text" id="xp-text">0 / 100</div></div>
+  </div>
+
+  <!-- Enemy HP bar -->
+  <div class="bar-wrap">
+    <div class="bar-label">Enemy HP</div>
+    <div class="bar"><div class="bar-fill hp" id="hp-fill" style="width:100%"></div><div class="bar-text" id="hp-text">100 / 100</div></div>
+  </div>
+
+  <!-- Enemy button -->
+  <button id="enemy-btn">FIGHT</button>
+
+  <!-- Energy bar -->
+  <div class="bar-wrap" style="margin-top: 16px;">
+    <div class="bar-label">Energy</div>
+    <div class="bar"><div class="bar-fill energy" id="en-fill" style="width:100%"></div><div class="bar-text" id="en-text">50 / 50</div></div>
+  </div>
+</div>
+
+<!-- Level-up modal -->
+<div id="modal-overlay">
+  <div id="modal">
+    <h2>Level Up!</h2>
+    <p id="modal-level">Choose a skill</p>
+    <div id="skill-choices"></div>
+  </div>
+</div>
+
+<!-- Game over -->
+<div id="gameover-overlay">
+  <h1>GAME OVER</h1>
+  <div class="go-stats" id="go-stats">You ran out of energy!</div>
+  <button id="restart-btn">Play Again</button>
+</div>
+
+<script>
+  // --- Skills pool ---
+  const SKILLS = [
+    { id: 'heavy',    name: 'Heavy Strike', desc: '+2 damage per click',                apply: s => { s.dmg += 2; } },
+    { id: 'efficient',name: 'Efficient',    desc: 'Clicks cost 1 less energy (min 1)',  apply: s => { s.cost = Math.max(1, s.cost - 1); } },
+    { id: 'vampirism',name: 'Vampirism',    desc: 'Each click restores 1 energy',       apply: s => { s.vamp += 1; } },
+    { id: 'berserker',name: 'Berserker',    desc: '+5 damage but +2 energy cost',       apply: s => { s.dmg += 5; s.cost += 2; } },
+    { id: 'focus',    name: 'Focus',        desc: '+20 max energy',                     apply: s => { s.maxEnergy += 20; s.energy = Math.min(s.energy + 20, s.maxEnergy); } },
+  ];
+
+  // --- State ---
+  let state;
+
+  function initState() {
+    return {
+      dmg: 1,
+      cost: 1,
+      vamp: 0,
+      energy: 50,
+      maxEnergy: 50,
+      xp: 0,
+      level: 1,
+      xpToLevel: 100,
+      wave: 1,
+      enemyHp: 100,
+      enemyMaxHp: 100,
+    };
+  }
+
+  // --- DOM refs ---
+  const $ = id => document.getElementById(id);
+  const enemyBtn   = $('enemy-btn');
+  const hpFill     = $('hp-fill');
+  const hpText     = $('hp-text');
+  const enFill     = $('en-fill');
+  const enText     = $('en-text');
+  const xpFill     = $('xp-fill');
+  const xpText     = $('xp-text');
+  const hLevel     = $('h-level');
+  const hWave      = $('h-wave');
+  const hDmg       = $('h-dmg');
+  const hCost      = $('h-cost');
+  const modalOvl   = $('modal-overlay');
+  const modalLevel = $('modal-level');
+  const skillDiv   = $('skill-choices');
+  const goOvl      = $('gameover-overlay');
+  const goStats    = $('go-stats');
+  const restartBtn = $('restart-btn');
+
+  // --- Render ---
+  function render() {
+    const s = state;
+    hpFill.style.width = (s.enemyHp / s.enemyMaxHp * 100) + '%';
+    hpText.textContent = s.enemyHp + ' / ' + s.enemyMaxHp;
+    enFill.style.width = (s.energy / s.maxEnergy * 100) + '%';
+    enText.textContent = s.energy + ' / ' + s.maxEnergy;
+    xpFill.style.width = (s.xp / s.xpToLevel * 100) + '%';
+    xpText.textContent = s.xp + ' / ' + s.xpToLevel;
+    hLevel.textContent = s.level;
+    hWave.textContent  = s.wave;
+    hDmg.textContent   = s.dmg;
+    hCost.textContent  = s.cost;
+  }
+
+  // --- Floating damage ---
+  function spawnDmgNumber(amount) {
+    const el = document.createElement('span');
+    el.className = 'dmg-float';
+    el.textContent = '-' + amount;
+    el.style.left = (30 + Math.random() * 100) + 'px';
+    el.style.top  = (30 + Math.random() * 60) + 'px';
+    enemyBtn.appendChild(el);
+    el.addEventListener('animationend', () => el.remove());
+  }
+
+  // --- Shake ---
+  function shakeEnemy() {
+    enemyBtn.classList.remove('shake');
+    void enemyBtn.offsetWidth;          // reflow
+    enemyBtn.classList.add('shake');
+  }
+
+  // --- Pick 3 random skills ---
+  function pick3() {
+    const pool = [...SKILLS];
+    const out = [];
+    while (out.length < 3 && pool.length) {
+      const i = Math.floor(Math.random() * pool.length);
+      out.push(pool.splice(i, 1)[0]);
+    }
+    return out;
+  }
+
+  // --- Level up modal ---
+  function showLevelUp() {
+    const choices = pick3();
+    modalLevel.textContent = 'You reached level ' + state.level + '!';
+    skillDiv.innerHTML = '';
+    choices.forEach(sk => {
+      const btn = document.createElement('button');
+      btn.className = 'skill-btn';
+      btn.innerHTML = '<span class="skill-name">' + sk.name + '</span><span class="skill-desc">' + sk.desc + '</span>';
+      btn.onclick = () => {
+        sk.apply(state);
+        modalOvl.classList.remove('open');
+        render();
+      };
+      skillDiv.appendChild(btn);
+    });
+    modalOvl.classList.add('open');
+  }
+
+  // --- Game over ---
+  function gameOver() {
+    goStats.textContent = 'Reached wave ' + state.wave + ' · Level ' + state.level;
+    goOvl.classList.add('open');
+  }
+
+  // --- Click handler ---
+  function onClickEnemy() {
+    const s = state;
+    if (modalOvl.classList.contains('open')) return;
+
+    // Spend energy
+    s.energy -= s.cost;
+
+    // Deal damage
+    s.enemyHp = Math.max(0, s.enemyHp - s.dmg);
+    spawnDmgNumber(s.dmg);
+    shakeEnemy();
+
+    // Vampirism
+    s.energy = Math.min(s.maxEnergy, s.energy + s.vamp);
+
+    // Check energy after vamp
+    if (s.energy <= 0) {
+      s.energy = 0;
+      render();
+      gameOver();
+      return;
+    }
+
+    // XP
+    s.xp += 10;
+    if (s.xp >= s.xpToLevel) {
+      s.xp -= s.xpToLevel;
+      s.level++;
+      render();
+      showLevelUp();
+    }
+
+    // Enemy dead → next wave
+    if (s.enemyHp <= 0) {
+      s.wave++;
+      s.enemyMaxHp = Math.ceil(s.enemyMaxHp * 1.5);
+      s.enemyHp = s.enemyMaxHp;
+    }
+
+    render();
+  }
+
+  // --- Restart ---
+  function restart() {
+    goOvl.classList.remove('open');
+    modalOvl.classList.remove('open');
+    state = initState();
+    render();
+  }
+
+  // --- Init ---
+  enemyBtn.addEventListener('click', onClickEnemy);
+  restartBtn.addEventListener('click', restart);
+  state = initState();
+  render();
+</script>
+</body>
+</html>

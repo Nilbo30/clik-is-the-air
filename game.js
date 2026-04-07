@@ -84,6 +84,7 @@ const Game = {
   },
 
   gameOver() {
+    console.log('gameOver called', new Error().stack);
     const s = Game.state;
     const dpEarned = Prestige.calcDP(s.kills);
     Prestige.dp += dpEarned;
@@ -97,6 +98,9 @@ const Game = {
   },
 
   restart() {
+    // Stop debug interval immediately to prevent stale clicks
+    Debug.stop();
+
     // Reset state FIRST so no interval can see old energy=0
     Game.state = Game.initState();
     Game.state.energy = Game.state.maxEnergy;
@@ -111,6 +115,7 @@ const Game = {
     if (Prestige.purchased['L1']) {
       setTimeout(() => Skills.showLevelUp(), 0);
     }
+    console.log('restart complete');
   },
 
   init() {

@@ -5,6 +5,14 @@ const Debug = {
   shiftHeld: false,
   hovering: false,
 
+  stop() {
+    if (Debug.interval) {
+      clearInterval(Debug.interval);
+      Debug.interval = null;
+      UI.dom.debugBadge.classList.remove('on');
+    }
+  },
+
   update() {
     const shouldRun = Debug.shiftHeld && Debug.hovering;
     if (shouldRun && !Debug.interval) {

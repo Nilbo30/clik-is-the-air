@@ -314,6 +314,30 @@
     z-index: 300;
   }
   #debug-badge.on { display: block; }
+
+  /* Guarantee indicator */
+  #guarantee-badge {
+    display: none;
+    position: fixed;
+    bottom: 18px;
+    left: 50%;
+    transform: translateX(-50%);
+    background: rgba(15, 15, 26, .9);
+    border: 1px solid #2a2a4a;
+    padding: 6px 16px;
+    border-radius: 8px;
+    font-size: 12px;
+    font-weight: 700;
+    letter-spacing: 1px;
+    z-index: 300;
+    text-align: center;
+    white-space: nowrap;
+  }
+  #guarantee-badge.on { display: block; }
+  #guarantee-badge.g-rare      { color: #60a5fa; border-color: #1e3a5f; }
+  #guarantee-badge.g-epic      { color: #c084fc; border-color: #3b1f6e; }
+  #guarantee-badge.g-legendary { color: #fbbf24; border-color: #78350f; }
+  #guarantee-badge.g-all-legendary { color: #fbbf24; border-color: #78350f; text-shadow: 0 0 8px rgba(251,191,36,.4); }
 </style>
 </head>
 <body>
@@ -359,6 +383,7 @@
   </div>
 </div>
 
+<div id="guarantee-badge"></div>
 <div id="debug-badge">DEBUG</div>
 
 <!-- Game over -->
@@ -378,13 +403,27 @@
   ];
   const TOTAL_WEIGHT = RARITIES.reduce((s, r) => s + r.weight, 0);
 
-  function rollRarity() {
+  function rollRarity(minRarityIndex = 0) {
+    // Roll base rarity from weights
     let roll = Math.random() * TOTAL_WEIGHT;
+    let result = RARITIES[0];
     for (const r of RARITIES) {
       roll -= r.weight;
-      if (roll <= 0) return r;
+      if (roll <= 0) { result = r; break; }
     }
-    return RARITIES[0];
+    let idx = RARITIES.indexOf(result);
+
+    // Lucky bonus: chance to upgrade to next rarity tier
+    if (state && state.luckyBonus > 0 && idx < RARITIES.length - 1) {
+      if (Math.random() * 100 < state.luckyBonus) {
+        idx++;
+      }
+    }
+
+    // Enforce minimum rarity
+    if (idx < minRarityIndex) idx = minRarityIndex;
+
+    return RARITIES[idx];
   }
 
   // --- Skills pool ---
@@ -409,6 +448,38 @@
       desc: (v) => '+' + v + ' max energy',
       apply: (s, v) => { s.maxEnergy += v; s.energy = Math.min(s.energy + v, s.maxEnergy); },
     },
+    {
+      id: 'lucky', name: 'Lucky', base: 0, isMeta: true,
+      desc: (v, r) => {
+        const vals = { common: 5, rare: 10, epic: 20, legendary: 35 };
+        return '+' + vals[r.id] + '% chance to upgrade skill rarity';
+      },
+      apply: (s, v, r) => {
+        const vals = { common: 5, rare: 10, epic: 20, legendary: 35 };
+        s.luckyBonus += vals[r.id];
+      },
+    },
+    {
+      id: 'guarantee', name: 'Guarantee', base: 0, isMeta: true,
+      desc: (v, r) => {
+        const descs = {
+          common: 'Next draw: at least one Rare skill',
+          rare: 'Next draw: at least one Epic skill',
+          epic: 'Next draw: at least one Legendary skill',
+          legendary: 'Next draw: ALL 3 skills are Legendary',
+        };
+        return descs[r.id];
+      },
+      apply: (s, v, r) => {
+        const mapping = { common: 'rare', rare: 'epic', epic: 'legendary', legendary: 'all-legendary' };
+        const newG = mapping[r.id];
+        // Keep the stronger guarantee
+        const rank = { rare: 1, epic: 2, legendary: 3, 'all-legendary': 4 };
+        if (!s.guarantee || rank[newG] > rank[s.guarantee]) {
+          s.guarantee = newG;
+        }
+      },
+    },
   ];
 
   // --- State ---
@@ -426,6 +497,8 @@
       wave: 1,
       enemyHp: 100,
       enemyMaxHp: 100,
+      luckyBonus: 0,
+      guarantee: null,
     };
   }
 
@@ -448,6 +521,7 @@
   const goOvl      = $('gameover-overlay');
   const goStats    = $('go-stats');
   const restartBtn = $('restart-btn');
+  const guarBadge  = $('guarantee-badge');
 
   // --- Render ---
   function render() {
@@ -462,6 +536,20 @@
     hWave.textContent  = s.wave;
     hDmg.textContent   = s.dmg;
     hCost.textContent  = s.cost;
+
+    // Guarantee badge
+    guarBadge.className = '';
+    if (s.guarantee) {
+      const labels = {
+        rare: 'Next draw: Rare+ guaranteed',
+        epic: 'Next draw: Epic+ guaranteed',
+        legendary: 'Next draw: Legendary guaranteed',
+        'all-legendary': 'Next draw: ALL Legendary!',
+      };
+      const cls = s.guarantee === 'all-legendary' ? 'g-all-legendary' : 'g-' + s.guarantee;
+      guarBadge.textContent = labels[s.guarantee];
+      guarBadge.className = 'on ' + cls;
+    }
   }
 
   // --- Floating damage ---
@@ -486,10 +574,28 @@
   function pick3() {
     const pool = [...SKILLS];
     const out = [];
-    while (out.length < 3 && pool.length) {
+    const rarityIdx = { rare: 1, epic: 2, legendary: 3 };
+
+    // Determine guarantee state
+    const g = state.guarantee;
+    const allLegendary = g === 'all-legendary';
+    const guaranteedSlot = (!allLegendary && g) ? Math.floor(Math.random() * 3) : -1;
+
+    // Consume guarantee
+    state.guarantee = null;
+
+    for (let slot = 0; slot < 3 && pool.length; slot++) {
       const i = Math.floor(Math.random() * pool.length);
       const skill = pool.splice(i, 1)[0];
-      const rarity = rollRarity();
+
+      let minIdx = 0;
+      if (allLegendary) {
+        minIdx = 3; // legendary index
+      } else if (slot === guaranteedSlot) {
+        minIdx = rarityIdx[g] || 0;
+      }
+
+      const rarity = rollRarity(minIdx);
       const scaledVal = Math.floor((skill.base || 0) * rarity.mult);
       out.push({ skill, rarity, scaledVal });
     }

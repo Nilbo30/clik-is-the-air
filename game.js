@@ -97,20 +97,25 @@ const Game = {
   },
 
   restart() {
+    // Hide all overlays first
     UI.dom.goOvl.classList.remove('open');
     UI.dom.modalOvl.classList.remove('open');
+
+    // Fully reset state to base values, then apply prestige
     Game.state = Game.initState();
+    Game.state.energy = Game.state.maxEnergy;
     UI.render();
 
-    // If L1 purchased, show a level-up skill choice before the run
+    // If L1 purchased, show skill choice after everything is reset
     if (Prestige.purchased['L1']) {
-      Skills.showLevelUp();
+      setTimeout(() => Skills.showLevelUp(), 0);
     }
   },
 
   init() {
     Prestige.load();
     Game.state = Game.initState();
+    Game.state.energy = Game.state.maxEnergy;
     UI.dom.enemyBtn.addEventListener('click', () => Game.onClickEnemy(false));
     UI.dom.restartBtn.addEventListener('click', Game.restart);
     UI.dom.prestigeBtn.addEventListener('click', Prestige.showScreen);
@@ -123,7 +128,7 @@ const Game = {
 
     // If L1 purchased, show skill choice on first load too
     if (Prestige.purchased['L1']) {
-      Skills.showLevelUp();
+      setTimeout(() => Skills.showLevelUp(), 0);
     }
   },
 };

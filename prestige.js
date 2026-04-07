@@ -38,9 +38,6 @@ const Prestige = {
   applyUpgrades(state) {
     if (Prestige.purchased['E1']) state.maxEnergy += 10;
     if (Prestige.purchased['E2']) state.maxEnergy += 20;
-    if (Prestige.purchased['E1'] || Prestige.purchased['E2']) {
-      state.energy = state.maxEnergy;
-    }
     if (Prestige.purchased['X1']) state.xpMult = (state.xpMult || 1) + 0.1;
     if (Prestige.purchased['D1']) state.dmg += 1;
     if (Prestige.purchased['C1']) state.cooldown = Math.max(0.2, state.cooldown - 0.1);

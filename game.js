@@ -97,13 +97,14 @@ const Game = {
   },
 
   restart() {
-    // Hide all overlays first
-    UI.dom.goOvl.classList.remove('open');
-    UI.dom.modalOvl.classList.remove('open');
-
-    // Fully reset state to base values, then apply prestige
+    // Reset state FIRST so no interval can see old energy=0
     Game.state = Game.initState();
     Game.state.energy = Game.state.maxEnergy;
+    console.log('restart state:', JSON.parse(JSON.stringify(Game.state)));
+
+    // THEN hide overlays
+    UI.dom.goOvl.classList.remove('open');
+    UI.dom.modalOvl.classList.remove('open');
     UI.render();
 
     // If L1 purchased, show skill choice after everything is reset

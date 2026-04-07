@@ -42,6 +42,7 @@
   .hud-value.wave  { color: #f59e0b; }
   .hud-value.dmg   { color: #ef4444; }
   .hud-value.cost  { color: #38bdf8; }
+  .hud-value.cd    { color: #34d399; }
 
   /* --- Bars --- */
   .bar-wrap {
@@ -93,6 +94,32 @@
     gap: 16px;
   }
 
+  .enemy-wrap {
+    position: relative;
+    width: 192px;
+    height: 192px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  #cooldown-ring {
+    position: absolute;
+    inset: 0;
+    width: 192px;
+    height: 192px;
+    transform: rotate(-90deg);
+    pointer-events: none;
+    z-index: 2;
+  }
+  #cooldown-ring circle {
+    fill: none;
+    stroke: rgba(239,68,68,.35);
+    stroke-width: 4;
+    stroke-dasharray: 565.48;  /* 2 * PI * 90 */
+    stroke-dashoffset: 565.48;
+    stroke-linecap: round;
+    transition: stroke-dashoffset 0.05s linear;
+  }
   #enemy-btn {
     width: 180px;
     height: 180px;
@@ -109,6 +136,11 @@
     align-items: center;
     justify-content: center;
     position: relative;
+    z-index: 1;
+  }
+  #enemy-btn.on-cooldown {
+    opacity: .55;
+    cursor: not-allowed;
   }
   #enemy-btn:hover {
     box-shadow: 0 0 50px rgba(239,68,68,.4), inset 0 0 30px rgba(239,68,68,.15);
@@ -348,6 +380,7 @@
   <div class="hud-item"><div class="hud-label">Wave</div><div class="hud-value wave" id="h-wave">1</div></div>
   <div class="hud-item"><div class="hud-label">Damage</div><div class="hud-value dmg" id="h-dmg">1</div></div>
   <div class="hud-item"><div class="hud-label">Cost</div><div class="hud-value cost" id="h-cost">1</div></div>
+  <div class="hud-item"><div class="hud-label">Cooldown</div><div class="hud-value cd" id="h-cd">1.0s</div></div>
 </div>
 
 <!-- Main arena -->
@@ -365,7 +398,10 @@
   </div>
 
   <!-- Enemy button -->
-  <button id="enemy-btn">FIGHT</button>
+  <div class="enemy-wrap">
+    <svg id="cooldown-ring" viewBox="0 0 192 192"><circle cx="96" cy="96" r="90"/></svg>
+    <button id="enemy-btn">FIGHT</button>
+  </div>
 
   <!-- Energy bar -->
   <div class="bar-wrap" style="margin-top: 16px;">
@@ -449,6 +485,31 @@
       apply: (s, v) => { s.maxEnergy += v; s.energy = Math.min(s.energy + v, s.maxEnergy); },
     },
     {
+      id: 'quickhands', name: 'Quick Hands', base: 0,
+      desc: (v, r) => {
+        const vals = { common: 0.1, rare: 0.15, epic: 0.25, legendary: 0.4 };
+        return '-' + vals[r.id] + 's cooldown';
+      },
+      apply: (s, v, r) => {
+        const vals = { common: 0.1, rare: 0.15, epic: 0.25, legendary: 0.4 };
+        s.cooldown = Math.max(0.2, Math.min(3, s.cooldown - vals[r.id]));
+      },
+    },
+    {
+      id: 'slowdeadly', name: 'Slow but Deadly', base: 0,
+      desc: (v, r) => {
+        const cd = { common: 0.3, rare: 0.4, epic: 0.5, legendary: 0.8 };
+        const dm = { common: 3, rare: 6, epic: 12, legendary: 25 };
+        return '+' + cd[r.id] + 's cooldown, +' + dm[r.id] + ' damage';
+      },
+      apply: (s, v, r) => {
+        const cd = { common: 0.3, rare: 0.4, epic: 0.5, legendary: 0.8 };
+        const dm = { common: 3, rare: 6, epic: 12, legendary: 25 };
+        s.cooldown = Math.max(0.2, Math.min(3, s.cooldown + cd[r.id]));
+        s.dmg += dm[r.id];
+      },
+    },
+    {
       id: 'lucky', name: 'Lucky', base: 0, isMeta: true,
       desc: (v, r) => {
         const vals = { common: 5, rare: 10, epic: 20, legendary: 35 };
@@ -499,6 +560,8 @@
       enemyMaxHp: 100,
       luckyBonus: 0,
       guarantee: null,
+      cooldown: 1.0,
+      lastClickTime: 0,
     };
   }
 
@@ -522,6 +585,8 @@
   const goStats    = $('go-stats');
   const restartBtn = $('restart-btn');
   const guarBadge  = $('guarantee-badge');
+  const hCd        = $('h-cd');
+  const cdRing     = document.querySelector('#cooldown-ring circle');
 
   // --- Render ---
   function render() {
@@ -536,6 +601,7 @@
     hWave.textContent  = s.wave;
     hDmg.textContent   = s.dmg;
     hCost.textContent  = s.cost;
+    hCd.textContent    = s.cooldown.toFixed(1) + 's';
 
     // Guarantee badge
     guarBadge.className = '';
@@ -630,11 +696,35 @@
     goOvl.classList.add('open');
   }
 
+  // --- Cooldown ring animation ---
+  const CD_CIRCUMFERENCE = 2 * Math.PI * 90; // matches SVG r=90
+  function updateCooldownRing() {
+    const s = state;
+    const now = performance.now();
+    const elapsed = (now - s.lastClickTime) / 1000;
+    const progress = Math.min(elapsed / s.cooldown, 1);
+    cdRing.style.strokeDashoffset = CD_CIRCUMFERENCE * (1 - progress);
+    if (progress >= 1) {
+      enemyBtn.classList.remove('on-cooldown');
+    } else {
+      enemyBtn.classList.add('on-cooldown');
+    }
+    requestAnimationFrame(updateCooldownRing);
+  }
+  requestAnimationFrame(updateCooldownRing);
+
   // --- Click handler ---
   function onClickEnemy(ignoreCooldown = false) {
     const s = state;
     if (goOvl.classList.contains('open')) return;
     if (!ignoreCooldown && modalOvl.classList.contains('open')) return;
+
+    // Cooldown check
+    if (!ignoreCooldown) {
+      const now = performance.now();
+      if ((now - s.lastClickTime) / 1000 < s.cooldown) return;
+      s.lastClickTime = now;
+    }
 
     // Spend energy
     s.energy -= s.cost;

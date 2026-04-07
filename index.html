@@ -186,6 +186,8 @@
     cursor: pointer;
     text-align: left;
     transition: background .15s, border-color .15s;
+    position: relative;
+    overflow: hidden;
   }
   .skill-btn:hover {
     background: #1e1e3a;
@@ -193,13 +195,71 @@
   }
   .skill-btn .skill-name {
     font-weight: 700;
-    color: #a78bfa;
   }
   .skill-btn .skill-desc {
     display: block;
     font-size: 12px;
     color: #888;
     margin-top: 2px;
+  }
+  .skill-btn .skill-rarity {
+    float: right;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 1px;
+    margin-top: 2px;
+  }
+
+  /* Rarity colors */
+  .rarity-common .skill-name  { color: #9ca3af; }
+  .rarity-common .skill-rarity { color: #9ca3af; }
+  .rarity-common { border-color: #374151; }
+  .rarity-common:hover { border-color: #6b7280; }
+
+  .rarity-rare .skill-name  { color: #60a5fa; }
+  .rarity-rare .skill-rarity { color: #60a5fa; }
+  .rarity-rare { border-color: #1e3a5f; }
+  .rarity-rare:hover { border-color: #60a5fa; }
+
+  .rarity-epic .skill-name  { color: #c084fc; }
+  .rarity-epic .skill-rarity { color: #c084fc; }
+  .rarity-epic { border-color: #3b1f6e; }
+  .rarity-epic:hover { border-color: #c084fc; }
+
+  .rarity-legendary .skill-name  { color: #fbbf24; }
+  .rarity-legendary .skill-rarity { color: #fbbf24; }
+  .rarity-legendary { border-color: #78350f; }
+  .rarity-legendary:hover { border-color: #fbbf24; }
+
+  /* Epic purple shimmer */
+  .rarity-epic::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 30%, rgba(192,132,252,.08) 45%, rgba(192,132,252,.15) 50%, rgba(192,132,252,.08) 55%, transparent 70%);
+    background-size: 250% 100%;
+    animation: shimmer 2.5s ease-in-out infinite;
+    pointer-events: none;
+  }
+
+  /* Legendary gold glow */
+  .rarity-legendary::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(105deg, transparent 25%, rgba(251,191,36,.1) 40%, rgba(251,191,36,.25) 50%, rgba(251,191,36,.1) 60%, transparent 75%);
+    background-size: 250% 100%;
+    animation: shimmer 2s ease-in-out infinite;
+    pointer-events: none;
+  }
+  .rarity-legendary {
+    box-shadow: 0 0 12px rgba(251,191,36,.2), inset 0 0 12px rgba(251,191,36,.05);
+  }
+
+  @keyframes shimmer {
+    0%   { background-position: 200% 0; }
+    100% { background-position: -50% 0; }
   }
 
   /* --- Game Over overlay --- */
@@ -309,12 +369,46 @@
 </div>
 
 <script>
+  // --- Rarity system ---
+  const RARITIES = [
+    { id: 'common',    name: 'Common',    mult: 1,   weight: 60 },
+    { id: 'rare',      name: 'Rare',      mult: 1.5, weight: 25 },
+    { id: 'epic',      name: 'Epic',      mult: 2,   weight: 12 },
+    { id: 'legendary', name: 'Legendary', mult: 3,   weight: 3  },
+  ];
+  const TOTAL_WEIGHT = RARITIES.reduce((s, r) => s + r.weight, 0);
+
+  function rollRarity() {
+    let roll = Math.random() * TOTAL_WEIGHT;
+    for (const r of RARITIES) {
+      roll -= r.weight;
+      if (roll <= 0) return r;
+    }
+    return RARITIES[0];
+  }
+
   // --- Skills pool ---
   const SKILLS = [
-    { id: 'heavy',    name: 'Heavy Strike', desc: '+2 damage per click',                apply: s => { s.dmg += 2; } },
-    { id: 'efficient',name: 'Efficient',    desc: 'Clicks cost 1 less energy (min 1)',  apply: s => { s.cost = Math.max(1, s.cost - 1); } },
-    { id: 'berserker',name: 'Berserker',    desc: '+5 damage but +2 energy cost',       apply: s => { s.dmg += 5; s.cost += 2; } },
-    { id: 'focus',    name: 'Focus',        desc: '+20 max energy',                     apply: s => { s.maxEnergy += 20; s.energy = Math.min(s.energy + 20, s.maxEnergy); } },
+    {
+      id: 'heavy', name: 'Heavy Strike', base: 2,
+      desc: (v) => '+' + v + ' damage per click',
+      apply: (s, v) => { s.dmg += v; },
+    },
+    {
+      id: 'efficient', name: 'Efficient', base: 1,
+      desc: (v) => '-' + v + ' energy cost (min 1)',
+      apply: (s, v) => { s.cost = Math.max(1, s.cost - v); },
+    },
+    {
+      id: 'berserker', name: 'Berserker', baseDmg: 5, baseCost: 2,
+      desc: (v, r) => '+' + Math.floor(5 * r.mult) + ' damage, +' + Math.floor(2 * r.mult) + ' energy cost',
+      apply: (s, v, r) => { s.dmg += Math.floor(5 * r.mult); s.cost += Math.floor(2 * r.mult); },
+    },
+    {
+      id: 'focus', name: 'Focus', base: 20,
+      desc: (v) => '+' + v + ' max energy',
+      apply: (s, v) => { s.maxEnergy += v; s.energy = Math.min(s.energy + v, s.maxEnergy); },
+    },
   ];
 
   // --- State ---
@@ -388,13 +482,16 @@
     enemyBtn.classList.add('shake');
   }
 
-  // --- Pick 3 random skills ---
+  // --- Pick 3 unique skills with independent rarity rolls ---
   function pick3() {
     const pool = [...SKILLS];
     const out = [];
     while (out.length < 3 && pool.length) {
       const i = Math.floor(Math.random() * pool.length);
-      out.push(pool.splice(i, 1)[0]);
+      const skill = pool.splice(i, 1)[0];
+      const rarity = rollRarity();
+      const scaledVal = Math.floor((skill.base || 0) * rarity.mult);
+      out.push({ skill, rarity, scaledVal });
     }
     return out;
   }
@@ -404,12 +501,15 @@
     const choices = pick3();
     modalLevel.textContent = 'You reached level ' + state.level + '!';
     skillDiv.innerHTML = '';
-    choices.forEach(sk => {
+    choices.forEach(({ skill, rarity, scaledVal }) => {
       const btn = document.createElement('button');
-      btn.className = 'skill-btn';
-      btn.innerHTML = '<span class="skill-name">' + sk.name + '</span><span class="skill-desc">' + sk.desc + '</span>';
+      btn.className = 'skill-btn rarity-' + rarity.id;
+      btn.innerHTML =
+        '<span class="skill-rarity">' + rarity.name + '</span>' +
+        '<span class="skill-name">' + skill.name + '</span>' +
+        '<span class="skill-desc">' + skill.desc(scaledVal, rarity) + '</span>';
       btn.onclick = () => {
-        sk.apply(state);
+        skill.apply(state, scaledVal, rarity);
         modalOvl.classList.remove('open');
         render();
       };
